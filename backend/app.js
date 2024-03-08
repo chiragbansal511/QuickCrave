@@ -3,11 +3,21 @@ const jwt = require('jsonwebtoken');
 const cors = require("cors");
 const { MongoClient } = require('mongodb');
 const bcrypt = require('bcrypt');
+const socketIo = require('socket.io');
+const http = require('http');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000'
+}));
 app.use(express.json());
-
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST']
+  }
+});
 url = "mongodb://0.0.0.0:27017/";
 const client = new MongoClient(url);
 const secretKey = 'your_secret_key';
@@ -17,6 +27,11 @@ const saltRounds = 2;
 app.listen(80, () => {
   console.log("Server started");
 })
+
+server.listen(8080, () => {
+  console.log("socket network started");
+})
+
 
 function authenticateToken(req, res, next) {
 
@@ -69,7 +84,7 @@ app.post('/signup/admin', async (req, res) => {
     hotelname: req.body.hotelname,
   }
 
-  const exists = await client.db(dbName).collection('adminlogin').findOne({ hotelname: user.hotelname });
+  const exists = await client.db(dbName).collection('adminlogin').findOne({ hotelname: req.body.hotelname });
   if (exists == null) {
     bcrypt.hash(req.body.password, saltRounds, async function (err, hash) {
       user.password = hash;
@@ -80,17 +95,15 @@ app.post('/signup/admin', async (req, res) => {
   }
 
   else {
-    res.json("hotel already exists");
+    res.json("already exists");
   }
 })
 
-app.post("/menu", authenticateToken, async (req, res) => {
+app.post("/openhotel", authenticateToken, async (req, res) => {
 
   try {
-
     const response = await client.db(dbName).collection(jwt.decode(req.token).hotelname).insertOne({ menu: req.body });
     res.json("inserted");
-
   }
 
   catch (error) {
@@ -98,7 +111,7 @@ app.post("/menu", authenticateToken, async (req, res) => {
   }
 })
 
-app.get("/close", authenticateToken, async (req, res) => {
+app.get("/closehotel", authenticateToken, async (req, res) => {
   try {
     const response = await client.db(dbName).collection(jwt.decode(req.token).hotelname).deleteOne({});
     res.json("deleted");
@@ -107,7 +120,7 @@ app.get("/close", authenticateToken, async (req, res) => {
   }
 })
 
-app.get('/open', authenticateToken, async (req, res) => {
+app.post('/isopen', authenticateToken, async (req, res) => {
   try {
     const response = await client.db(dbName).collection(req.body.hotelname).findOne({});
     if (response == null) {
@@ -115,9 +128,35 @@ app.get('/open', authenticateToken, async (req, res) => {
     }
 
     else {
-      res.json("open");
+      res.json(response);
     }
   } catch (error) {
     res.json("error");
   }
 })
+
+app.post("/order", (req, res) => {
+  try {
+    io.to(req.body.hotelname).emit("order", {
+      order : req.body.order,
+      user : req.body.username
+    });
+
+    res.json("ordered");
+  } catch (error) {
+    res.json("error");
+  }
+})
+
+io.on('connection', (socket) => {
+  console.log('A user connected');
+
+  socket.on('disconnect', () => {
+    console.log('A user disconnected');
+  });
+
+  socket.on('joinroom', (roomname) => {
+    socket.join(roomname);
+    console.log(`join room ${roomname}`);
+  })
+});
