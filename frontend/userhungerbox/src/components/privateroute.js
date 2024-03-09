@@ -3,8 +3,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import axios from 'axios';
 import Cookies from 'js-cookie';
 import Home from "../pages/home";
+import Setmenu from "../pages/setmenu";
 import Orders from "../pages/orders";
-import GetMenu from "../pages/getmenu";
 
 async function authorizationuser() {
     const response = await axios.get('http://localhost:80/auth', {
@@ -36,7 +36,7 @@ export default function PrivateRoute() {
                     <Routes>
                         <Route path="home" element={<Home />} />
                         <Route index element={<Home />} />
-                        <Route path="getmenu" element={<GetMenu />} />
+                        <Route path="setmenu" element={<Setmenu />} />
                         <Route path="order" element={<Orders />} />
                         <Route />
                     </Routes>

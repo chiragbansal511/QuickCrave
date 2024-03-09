@@ -9,24 +9,27 @@ export default function Signup()
   const navigate = useNavigate();
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
+    const [hotelname, setHotelname] = useState('');
     const [password, setPassword] = useState('');
   
     async function handleSubmit(e){
       e.preventDefault();
       
-      const response = await axios.post('http://localhost:80/signup/user', {
+      const response = await axios.post('http://localhost:80/signup/admin', {
         name: username,
         email : email,
+        hotelname : hotelname,
         password: password
       });
       if(response.data === "already exists")
       {
         alert("username already exists");
         setUsername("");
+        setHotelname("");
       }
       else {
         Cookies.set("accessToken" , response.data.accessToken);
-        Cookies.set("username" , username);
+        Cookies.set("hotelname" , hotelname);
         navigate('/home')
       window.location.reload();
       }
@@ -53,6 +56,15 @@ export default function Signup()
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="hotel name">Hotel Name:</label>
+            <input
+              type="text"
+              id="hotelname"
+              value={hotelname}
+              onChange={(e) => setHotelname(e.target.value)}
             />
           </div>
           <div>

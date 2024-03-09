@@ -10,17 +10,19 @@ export default function Login()
   const navigate = useNavigate();
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [hotelname, setHotelname] = useState('');
   
     async function handleSubmit(e){
       e.preventDefault();
       
-      const response = await axios.post('http://localhost:80/login/user', {
+      const response = await axios.post('http://localhost:80/login/admin', {
         username: username,
         password: password,
+        hotelname : hotelname
       });
       
       Cookies.set("accessToken" , response.data.accessToken);
-      Cookies.set("username" , username);
+      Cookies.set("hotelname" , hotelname);
       navigate("/home");
       window.location.reload();
     };
@@ -36,6 +38,15 @@ export default function Login()
               id="username"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="Hotel Name">Hotel Name:</label>
+            <input
+              type="text"
+              id="hotelname"
+              value={hotelname}
+              onChange={(e) => setHotelname(e.target.value)}
             />
           </div>
           <div>

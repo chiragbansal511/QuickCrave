@@ -75,6 +75,30 @@ app.post('/login/admin', async (req, res) => {
   }
 })
 
+app.post('/login/user', async (req, res) => {
+
+  const user = {
+    username: req.body.username,
+    password: req.body.password
+  }
+
+  const response = await client.db(dbName).collection('userlogin').findOne({ username: user.username});
+  if (response == null) {
+    res.json('user does not exist');
+  }
+
+  else {
+    bcrypt.compare(req.body.password, response.password, function (err, result) {
+      if (result) {
+        const accessToken = jwt.sign({ username : user.username }, secretKey);
+        res.json({ accessToken: accessToken });
+      }
+
+      else res.json('failed');
+    })
+  }
+})
+
 app.post('/signup/admin', async (req, res) => {
 
   const user = {
@@ -90,6 +114,29 @@ app.post('/signup/admin', async (req, res) => {
       user.password = hash;
       await client.db(dbName).collection('adminlogin').insertOne(user);
       const accessToken = jwt.sign({ hotelname: user.hotelname }, secretKey);
+      res.json({ accessToken: accessToken });
+    });
+  }
+
+  else {
+    res.json("already exists");
+  }
+})
+
+app.post('/signup/user', async (req, res) => {
+
+  const user = {
+    username: req.body.name,
+    email: req.body.email,
+    password: req.body.password,
+  }
+
+  const exists = await client.db(dbName).collection('userlogin').findOne({ username : req.body.username });
+  if (exists == null) {
+    bcrypt.hash(req.body.password, saltRounds, async function (err, hash) {
+      user.password = hash;
+      await client.db(dbName).collection('userlogin').insertOne(user);
+      const accessToken = jwt.sign({ username : user.username }, secretKey);
       res.json({ accessToken: accessToken });
     });
   }
@@ -135,11 +182,11 @@ app.post('/isopen', authenticateToken, async (req, res) => {
   }
 })
 
-app.post("/order", (req, res) => {
+app.post("/order", authenticateToken , (req, res) => {
   try {
     io.to(req.body.hotelname).emit("order", {
       order : req.body.order,
-      user : req.body.username
+      user : jwt.decode(req.token).username
     });
 
     res.json("ordered");
