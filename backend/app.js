@@ -1,20 +1,22 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const cors = require("cors");
-const { MongoClient } = require('mongodb');
+const { MongoClient, Admin } = require('mongodb');
 const bcrypt = require('bcrypt');
 const socketIo = require('socket.io');
 const http = require('http');
 
 const app = express();
-app.use(cors({
-  origin: 'http://localhost:3000'
-}));
+const corsOptions = {
+  origin: ['http://localhost:3000', 'http://localhost:4000'],
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'http://localhost:4000'],
     methods: ['GET', 'POST']
   }
 });
@@ -136,7 +138,7 @@ app.post('/signup/user', async (req, res) => {
     bcrypt.hash(req.body.password, saltRounds, async function (err, hash) {
       user.password = hash;
       await client.db(dbName).collection('userlogin').insertOne(user);
-      const accessToken = jwt.sign({ username : user.username }, secretKey);
+      const accessToken = jwt.sign({ username : req.body.username }, secretKey);
       res.json({ accessToken: accessToken });
     });
   }
@@ -165,6 +167,23 @@ app.get("/closehotel", authenticateToken, async (req, res) => {
   } catch (error) {
     res.json("error");
   }
+})
+
+app.get('/hotellist' , authenticateToken , async (req , res)=>{
+try {
+  const response = await client.db(dbName).collection("adminlogin").find({}).toArray();
+
+  if(response == null)
+  {
+    res.json("error");
+  }
+
+  else {
+    res.json(response);
+  }
+} catch (error) {
+  res.sendStatus(404);
+}
 })
 
 app.post('/isopen', authenticateToken, async (req, res) => {

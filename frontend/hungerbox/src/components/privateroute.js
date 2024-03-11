@@ -5,6 +5,7 @@ import Cookies from 'js-cookie';
 import Home from "../pages/home";
 import Orders from "../pages/orders";
 import GetMenu from "../pages/getmenu";
+import Hotellist from "../pages/hotellist";
 
 async function authorizationuser() {
     const response = await axios.get('http://localhost:80/auth', {
@@ -38,6 +39,7 @@ export default function PrivateRoute() {
                         <Route index element={<Home />} />
                         <Route path="getmenu" element={<GetMenu />} />
                         <Route path="order" element={<Orders />} />
+                        <Route path="hotellist" element={<Hotellist />} />
                         <Route />
                     </Routes>
                 </BrowserRouter>

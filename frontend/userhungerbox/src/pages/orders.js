@@ -32,7 +32,9 @@ export default function Orders() {
                 <div>
                 Order :
               {
-                e.order
+                e.order.map((e , index)=>(
+                  <div key={index}>{e}</div>
+                ))
               }
                 </div>
             </div>

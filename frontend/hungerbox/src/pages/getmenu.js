@@ -1,34 +1,28 @@
 import axios from "axios";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Cookies from "js-cookie";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function GetMenu() {
     const navigate = useNavigate();
     const [items, setItems] = useState([]);
     const [price, setPrice] = useState([]);
-    const [count, setCount] = useState(1);
+    const [order, setOrder] = useState([]);
+    const location = useLocation();
+    const dataReceived = location.state.data;
 
-    function setitems(index, e) {
-        const newItems = [...items]; // Create a shallow copy
-        newItems[index] = e.target.value;
-        setItems(newItems);
-    }
-
-    function setprice(index, e) {
-        const newPrices = [...price]; // Create a shallow copy
-        newPrices[index] = e.target.value;
-        setPrice(newPrices);
+    function setorder( e , index ) {
+        const newOrder = [...order]; // Create a shallow copy
+        newOrder.push(e.target.value);
+        setOrder(newOrder);
     }
 
     async function onsubmit() {
         const response = await axios.post(
-            'http://localhost:80/openhotel',
+            'http://localhost:80/order',
             {
-                menu: {
-                    items: items,
-                    price: price
-                }
+                hotelname: dataReceived,
+                order : order,
             },
             {
                 headers: {
@@ -37,30 +31,52 @@ export default function GetMenu() {
             }
         );
 
+        Cookies.set("cart" , order);
         console.log(response.data);
-        navigate("/order");
+        console.log(Cookies.get("cart"))
+        // navigate("/order");
     }
+
+    async function gethotellist() {
+        const response = await axios.post(
+            'http://localhost:80/isopen',
+            {
+                hotelname: dataReceived,
+            },
+            {
+                headers: {
+                    Authorization: "Bearer " + Cookies.get("accessToken"),
+                },
+            }
+        );
+        if(response.data == 'closed')
+        {
+            alert("Hotel is closed now");
+            navigate("/hotellist");
+            window.location.reload();
+        }
+        setItems(response.data.menu.menu.items);
+        setPrice(response.data.menu.menu.price);
+    }
+
+    useEffect(() => {
+        gethotellist();
+    }, []);
+
 
     return (
         <div>
-            {Array.from({ length: count }, (_, index) => (
+            {
+             items.map((e , index)=>(
                 <div key={index}>
-                    <input
-                        type="text"
-                        placeholder="Item"
-                        value={items[index] || ''}
-                        onChange={(e) => setitems(index, e)}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Price"
-                        value={price[index] || ''}
-                        onChange={(e) => setprice(index, e)}
-                    />
+                     item : {e}
+                     <input type="checkbox" value={e} name="checkbox" className={index} onChange={(event) => setorder(event, index)} />
+                    <div>price : {price[index]}</div>
                 </div>
-            ))}
-            <button onClick={() => setCount(currentCount => currentCount + 1)}>Add</button>
-            <button onClick={() => { onsubmit() }}>Submit</button>
+             ))
+            }
+
+            <button onClick={()=>onsubmit()}>Submit</button>
         </div>
     );
 }
